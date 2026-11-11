@@ -32,8 +32,20 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0F2027), // Fond sombre cohérent
       appBar: AppBar(
-        title: Text("Bonjour, ${user?.name ?? 'Client'}", style: GoogleFonts.aBeeZee(fontStyle: FontStyle.italic, fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xFF203A43),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Bonjour, ${user?.name ?? 'Client'}",
+              style: GoogleFonts.aBeeZee(fontWeight: FontWeight.bold, fontStyle: FontStyle.italic, fontSize: 18),
+            ),
+            Text(
+              "Bienvenue à l'Hôtel Sahara Beach",
+              style: GoogleFonts.aBeeZee(fontSize: 11, fontStyle: FontStyle.italic, color: Colors.white70),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.amber),
@@ -42,7 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
               if (!mounted) return;
               Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginScreen()));
             },
-          ),
+          )
         ],
       ),
       body: FadeIn(

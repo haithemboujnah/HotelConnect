@@ -59,4 +59,8 @@ class ComplaintService {
   static List<Complaint> getUserComplaints(String email) {
     return _complaints.where((c) => c.userEmail == email).toList();
   }
+
+  static int getUserComplaintsCount(String email) {
+    return _complaints.where((c) => c.userEmail == email).length;
+  }
 }

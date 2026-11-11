@@ -2,10 +2,12 @@
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hotel_connect/models/reservation.dart';
 import '../data/reservation_service.dart';
 import '../data/auth_service.dart';
 import '../data/service_booking_service.dart';
 import '../data/complaint_service.dart';
+import '../widgets/stat_card.dart';
 
 class InvoiceScreen extends StatefulWidget {
   const InvoiceScreen({super.key});
@@ -87,26 +89,97 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
           ),
           const SizedBox(height: 24),
 
+          Text(
+            "📊 Vos statistiques",
+            style: GoogleFonts.poppins(
+              color: Colors.amber,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.1,
+            children: [
+              FadeInLeft(
+                child: StatCard(
+                  icon: Icons.bed,
+                  label: "Réservations",
+                  value: "${reservations.length}",
+                  color: Colors.blueAccent,
+                ),
+              ),
+              FadeInRight(
+                child: StatCard(
+                  icon: Icons.room_service,
+                  label: "Services",
+                  value: "${ServiceBookingService.getUserServicesCount(email)}",
+                  color: Colors.greenAccent,
+                ),
+              ),
+              FadeInLeft(
+                child: StatCard(
+                  icon: Icons.event,
+                  label: "Activités",
+                  value: "${ServiceBookingService.getUserActivitiesCount(email)}",
+                  color: Colors.orangeAccent,
+                ),
+              ),
+              FadeInRight(
+                child: StatCard(
+                  icon: Icons.report_problem,
+                  label: "Réclamations",
+                  value: "${ComplaintService.getUserComplaintsCount(email)}",
+                  color: Colors.redAccent,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
           // Section Chambres
           if (reservations.isNotEmpty) ...[
             Text("🏨 Chambres", style: GoogleFonts.poppins(color: Colors.amber, fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            ...reservations.map((r) => FadeInLeft(
-              child: Card(
-                color: const Color(0xFF203A43),
-                child: ListTile(
-                  title: Text("Chambre réservée", style: TextStyle(color: Colors.white)),
-                  subtitle: Text(
-                    "${r.checkIn.day}/${r.checkIn.month} → ${r.checkOut.day}/${r.checkOut.month}",
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                  trailing: Text(
-                    "${r.totalPrice.toStringAsFixed(0)} DT",
-                    style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold),
+            ...reservations.map((r) {
+              final canCancel = ReservationService.canCancelReservation(r);
+              return FadeInLeft(
+                child: Card(
+                  color: const Color(0xFF203A43),
+                  child: ListTile(
+                    title: Text("Chambre réservée", style: TextStyle(color: Colors.white)),
+                    subtitle: Text(
+                      "${r.checkIn.day}/${r.checkIn.month} → ${r.checkOut.day}/${r.checkOut.month}",
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          "${r.totalPrice.toStringAsFixed(0)} DT",
+                          style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(width: 8),
+                        // 🆕 Bouton d'annulation
+                        IconButton(
+                          icon: Icon(
+                            Icons.cancel,
+                            color: canCancel ? Colors.redAccent : Colors.grey,
+                          ),
+                          tooltip: canCancel ? "Annuler" : "Séjour déjà commencé",
+                          onPressed: canCancel ? () => _confirmCancel(r) : null,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            )),
+              );
+            }),
             const SizedBox(height: 16),
           ],
 
@@ -274,6 +347,46 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _confirmCancel(Reservation res) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF203A43),
+        title: Text("Annuler la réservation ?", style: TextStyle(color: Colors.amber)),
+        content: Text(
+          "Voulez-vous vraiment annuler cette réservation de ${res.totalPrice.toStringAsFixed(0)} DT ?",
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text("Non", style: TextStyle(color: Colors.white70)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final error = await ReservationService.cancelReservation(res.id);
+              if (!context.mounted) return;
+              Navigator.pop(context);
+
+              if (error != null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(error), backgroundColor: Colors.redAccent),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("✅ Réservation annulée."), backgroundColor: Colors.green),
+                );
+                setState(() {}); // Rafraîchir la facture
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            child: const Text("Oui, annuler", style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }

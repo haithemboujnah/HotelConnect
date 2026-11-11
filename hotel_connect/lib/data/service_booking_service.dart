@@ -107,4 +107,14 @@ class ServiceBookingService {
     final servicesTotal = getUserServicesTotal(email);
     return roomsTotal + servicesTotal;
   }
+
+  static int getUserServicesCount(String email) {
+    return _bookings.where((b) => b.userEmail == email).length;
+  }
+
+  static int getUserActivitiesCount(String email) {
+    return _bookings
+        .where((b) => b.userEmail == email && b.serviceId.startsWith('a'))
+        .length;
+  }
 }

@@ -87,4 +87,31 @@ class ReservationService {
   static List<Reservation> getUserReservations(String email) {
     return _reservations.where((r) => r.userEmail == email).toList();
   }
+
+  static bool canCancelReservation(Reservation res) {
+    // Impossible d'annuler si le séjour a déjà commencé
+    final today = DateTime.now();
+    final todayDate = DateTime(today.year, today.month, today.day);
+    return res.checkIn.isAfter(todayDate);
+  }
+
+  // 🆕 Annuler une réservation avec validation
+  static Future<String?> cancelReservation(String reservationId) async {
+    final index = _reservations.indexWhere((r) => r.id == reservationId);
+
+    if (index == -1) {
+      return "Réservation introuvable.";
+    }
+
+    final res = _reservations[index];
+
+    // Validation : le séjour ne doit pas avoir commencé
+    if (!canCancelReservation(res)) {
+      return "Impossible d'annuler : le séjour a déjà commencé.";
+    }
+
+    _reservations.removeAt(index);
+    await _save();
+    return null; // Succès
+  }
 }
